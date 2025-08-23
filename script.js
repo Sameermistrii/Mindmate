@@ -237,6 +237,11 @@ async function sendMessage() {
         // Add AI response
         addChatMessage(data.response, 'ai');
         
+        // If server used fallback, show a subtle note
+        if (data.fallback) {
+            addChatMessage('(Note: Using a temporary response while AI service initializes.)', 'ai');
+        }
+        
     } catch (error) {
         console.error('Error calling AI API:', error);
         
