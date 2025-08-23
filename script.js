@@ -203,6 +203,27 @@ function buildRoadmapPrompt(answers) {
     ].join('\n');
 }
 
+// Utility: format arbitrary text into 4–8 concise bullet points
+function formatToBullets(text) {
+    if (!text || typeof text !== 'string') return '';
+    const normalized = text.replace(/\r\n/g, '\n').replace(/\t+/g, ' ').trim();
+
+    // If it already looks like a list, keep line breaks
+    if (/^(\s*[•\-\d]+[\)\.\-]?\s+\S)/m.test(normalized)) {
+        return normalized;
+    }
+
+    // Otherwise, split into sentences and bullet them
+    const sentences = normalized
+        .split(/(?<=[\.\!\?])\s+/)
+        .map(s => s.trim())
+        .filter(Boolean)
+        .slice(0, 8);
+
+    if (sentences.length === 0) return normalized;
+    return sentences.map(s => `• ${s}`).join('\n');
+}
+
 async function generateRoadmapFromQuiz() {
     try {
         const prompt = buildRoadmapPrompt(quizAnswers || {});
@@ -224,7 +245,8 @@ async function generateRoadmapFromQuiz() {
         const data = await response.json();
         const roadmapContent = document.getElementById('roadmap-content');
         if (roadmapContent) {
-            roadmapContent.textContent = data && data.response ? data.response : 'Could not generate roadmap. Please try again.';
+            const formatted = formatToBullets(data && data.response ? data.response : '');
+            roadmapContent.textContent = formatted || 'Could not generate roadmap. Please try again.';
         }
     } catch (err) {
         const roadmapContent = document.getElementById('roadmap-content');
@@ -306,8 +328,9 @@ async function sendMessage() {
         // Remove typing indicator
         typingDiv.remove();
         
-        // Add AI response
-        addChatMessage(data.response, 'ai');
+        // Add AI response (formatted)
+        const formatted = formatToBullets(data.response);
+        addChatMessage(formatted, 'ai');
         
         // If server used fallback, show a subtle note
         if (data.fallback) {
@@ -329,7 +352,7 @@ function addChatMessage(content, sender) {
     const chatMessages = document.getElementById('chat-messages');
     const messageDiv = document.createElement('div');
     messageDiv.className = `chat-message ${sender}`;
-    messageDiv.textContent = content;
+    messageDiv.textContent = sender === 'ai' ? formatToBullets(content) : content;
     
     chatMessages.appendChild(messageDiv);
     chatMessages.scrollTop = chatMessages.scrollHeight;
