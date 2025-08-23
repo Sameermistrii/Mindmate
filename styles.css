@@ -460,6 +460,7 @@ body {
     padding: 1rem;
     border-radius: 0.5rem;
     animation: messageSlideIn 0.3s ease-out;
+    white-space: pre-wrap;
 }
 
 .chat-message.user {

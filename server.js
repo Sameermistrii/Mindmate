@@ -83,7 +83,15 @@ app.post('/api/chat', async (req, res) => {
         const userMessage = Array.isArray(req.body?.messages) && req.body.messages.length > 0
             ? req.body.messages[req.body.messages.length - 1].content
             : '';
-        const fallbackResponse = `I’m here to help with career guidance. Based on your message${userMessage ? ` "${userMessage}"` : ''}, here are quick steps: 1) Clarify your goal, 2) Pick one skill to develop this week, 3) Find one free course to start today (NPTEL/SWAYAM/YouTube), 4) Set a 7‑day plan and track progress. Ask me for a tailored roadmap anytime.`;
+        const fallbackResponse = [
+            `Here’s a quick career plan${userMessage ? ` for: "${userMessage}"` : ''}:`,
+            `• Clarify your 1 goal this month`,
+            `• Pick 1 skill to learn this week`,
+            `• Start 1 free course (NPTEL/SWAYAM/YouTube) today`,
+            `• Build 1 small project to practice`,
+            `• Network with 2 people in your field`,
+            `• Review progress every Sunday`
+        ].join('\n');
         return res.json({ response: fallbackResponse, fallback: true });
     }
 });

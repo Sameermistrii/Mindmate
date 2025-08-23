@@ -213,15 +213,15 @@ async function sendMessage() {
                 messages: [
                     {
                         role: 'system',
-                        content: 'You are an AI career mentor. Provide helpful, personalized career guidance, answer questions about different professions, and give practical advice. Keep responses concise but informative.'
+                        content: 'You are an AI career mentor. Format answers as 3–6 short bullet points with clear line breaks. Keep each bullet under 20 words. Avoid long paragraphs. Use simple language.'
                     },
                     {
                         role: 'user',
                         content: message
                     }
                 ],
-                max_tokens: 500,
-                temperature: 0.7
+                max_tokens: 200,
+                temperature: 0.4
             })
         });
         
