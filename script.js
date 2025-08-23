@@ -190,16 +190,25 @@ function buildRoadmapPrompt(answers) {
     const careerTrack = answers.careerTrack || 'Not specified';
 
     return [
-        'You are an AI career mentor. Create a concise 4–6 step career roadmap.',
-        'Format as short bullet points with clear line breaks. No long paragraphs.',
-        `Student profile:`,
+        'Create a JSON-only roadmap (no prose, no markdown) following this schema:',
+        '{',
+        '  "targetRole": string,',
+        '  "skills": string[],',
+        '  "resources": string[],',
+        '  "projects": string[],',
+        '  "timeline": { "weeks1to4": string[], "weeks5to8": string[] },',
+        '  "next7Days": string[]',
+        '}',
+        '',
+        'Constraints:',
+        '- Use specific, actionable bullets (Indian/low-cost resources preferred).',
+        '- Keep items short; avoid generic advice.',
+        '',
+        'Student profile:',
         `• Interests/subjects: ${subjects}`,
         `• Enjoys activities: ${activities}`,
         `• Preferred environment: ${environment}`,
-        `• Target track: ${careerTrack}`,
-        '',
-        'Roadmap should include: skills to learn, 1–2 free resources (NPTEL/SWAYAM/YouTube),',
-        '1 project idea, and a rough timeline (weeks). Keep it simple and actionable.'
+        `• Target track: ${careerTrack}`
     ].join('\n');
 }
 
@@ -224,6 +233,92 @@ function formatToBullets(text) {
     return sentences.map(s => `• ${s}`).join('\n');
 }
 
+// Robust JSON parse: try direct, then extract first {...} block
+function safeParseJson(text) {
+  if (!text || typeof text !== 'string') return null;
+  try { return JSON.parse(text); } catch {}
+  try {
+    const start = text.indexOf('{');
+    const end = text.lastIndexOf('}');
+    if (start !== -1 && end !== -1 && end > start) {
+      const slice = text.slice(start, end + 1);
+      return JSON.parse(slice);
+    }
+  } catch {}
+  return null;
+}
+
+// Render a structured roadmap JSON into rich HTML
+function renderRoadmap(roadmap) {
+  const container = document.getElementById('roadmap-content');
+  if (!container) return;
+
+  // Defensive defaults
+  const targetRole = roadmap?.targetRole || quizAnswers?.careerTrack || 'Your Target Role';
+  const skills = Array.isArray(roadmap?.skills) ? roadmap.skills : [];
+  const resources = Array.isArray(roadmap?.resources) ? roadmap.resources : [];
+  const projects = Array.isArray(roadmap?.projects) ? roadmap.projects : [];
+  const next7Days = Array.isArray(roadmap?.next7Days) ? roadmap.next7Days : [];
+  const timeline = roadmap?.timeline || { weeks1to4: [], weeks5to8: [] };
+
+  const list = arr => arr.map(item => `<li>${item}</li>`).join('');
+
+  const html = `
+    <div class="careers-grid">
+      <div class="career-card">
+        <div class="career-header">
+          <div class="career-icon">🗺️</div>
+          <div>
+            <h3>${targetRole}</h3>
+            <span class="career-match">Personalized Plan</span>
+          </div>
+        </div>
+        <div>
+          <h4>Key Skills</h4>
+          <ul>${list(skills)}</ul>
+        </div>
+        <div style="margin-top: 0.75rem;">
+          <h4>Free Resources</h4>
+          <ul>${list(resources)}</ul>
+        </div>
+        <div style="margin-top: 0.75rem;">
+          <h4>Projects</h4>
+          <ul>${list(projects)}</ul>
+        </div>
+      </div>
+
+      <div class="career-card">
+        <div class="career-header">
+          <div class="career-icon">⏱️</div>
+          <div>
+            <h3>Timeline</h3>
+            <span class="career-match">Weeks</span>
+          </div>
+        </div>
+        <div>
+          <h4>Weeks 1–4</h4>
+          <ul>${list(Array.isArray(timeline.weeks1to4) ? timeline.weeks1to4 : [])}</ul>
+          <h4 style="margin-top: 0.75rem;">Weeks 5–8</h4>
+          <ul>${list(Array.isArray(timeline.weeks5to8) ? timeline.weeks5to8 : [])}</ul>
+        </div>
+      </div>
+
+      <div class="career-card">
+        <div class="career-header">
+          <div class="career-icon">✅</div>
+          <div>
+            <h3>Next 7 Days</h3>
+            <span class="career-match">Action Items</span>
+          </div>
+        </div>
+        <ul>${list(next7Days)}</ul>
+      </div>
+    </div>
+  `;
+
+  container.innerHTML = html;
+}
+
 async function generateRoadmapFromQuiz() {
     try {
         const prompt = buildRoadmapPrompt(quizAnswers || {});
@@ -234,26 +329,33 @@ async function generateRoadmapFromQuiz() {
                 provider: 'gemini',
                 model: 'gemini-1.5-flash',
                 messages: [
-                    { role: 'system', content: 'Return 4–6 short bullet points with clear line breaks. Avoid paragraphs.' },
+                    { role: 'system', content: 'Return valid JSON only. No preamble. No backticks. Follow the provided schema exactly.' },
                     { role: 'user', content: prompt }
                 ],
-                max_tokens: 250,
-                temperature: 0.4
+                max_tokens: 400,
+                temperature: 0.35
             })
         });
 
         const data = await response.json();
         const roadmapContent = document.getElementById('roadmap-content');
-        if (roadmapContent) {
-            const formatted = formatToBullets(data && data.response ? data.response : '');
-            roadmapContent.textContent = formatted || 'Could not generate roadmap. Please try again.';
+        const parsed = safeParseJson(data && data.response ? data.response : '');
+
+        if (parsed) {
+            renderRoadmap(parsed);
+        } else {
+            // Fallback to readable bullets
+            if (roadmapContent) {
+                const formatted = formatToBullets(data && data.response ? data.response : '');
+                roadmapContent.textContent = formatted || 'Could not generate roadmap. Please try again.';
+            }
         }
     } catch (err) {
         const roadmapContent = document.getElementById('roadmap-content');
         if (roadmapContent) {
             roadmapContent.textContent = [
                 '• Clarify one career goal for this month',
-                '• Learn 1 core skill (free course: NPTEL/SWAYAM/YouTube)',
+                '• Learn 1 core skill (NPTEL/SWAYAM/YouTube)',
                 '• Build 1 mini project to practice',
                 '• Create a simple portfolio (GitHub/Google Drive)',
                 '• Connect with 2 professionals on LinkedIn',
@@ -307,15 +409,23 @@ async function sendMessage() {
                 messages: [
                     {
                         role: 'system',
-                        content: 'You are an AI career mentor. Format answers as 3–6 short bullet points with clear line breaks. Keep each bullet under 20 words. Avoid long paragraphs. Use simple language.'
+                        content: [
+                            'You are an expert Indian career mentor and curriculum designer.',
+                            'Write crisp, specific, actionable bullets (3–6).',
+                            'Each bullet: action + resource/example + outcome.',
+                            'Prefer Indian/low-cost resources (NPTEL, SWAYAM, NSDC, YouTube channels).',
+                            'Include a mini project idea when relevant.',
+                            'Avoid generic fluff and filler phrases. No long paragraphs.',
+                            'Keep each bullet under 18 words.',
+                        ].join('\n')
                     },
                     {
                         role: 'user',
                         content: message
                     }
                 ],
-                max_tokens: 200,
-                temperature: 0.4
+                max_tokens: 220,
+                temperature: 0.35
             })
         });
         
@@ -344,7 +454,7 @@ async function sendMessage() {
         typingDiv.remove();
         
         // Fallback response
-        addChatMessage("I'm having trouble connecting to my AI services right now. Please try again in a moment, or feel free to ask about career paths, skills development, or job search strategies!", 'ai');
+        addChatMessage('Please try again in a moment. Meanwhile, ask for a roadmap or a 7‑day plan.', 'ai');
     }
 }
 
