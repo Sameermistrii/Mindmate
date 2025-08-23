@@ -214,6 +214,7 @@ function buildRoadmapPrompt(answers) {
         '  "next7Days": string[]',
         '}',
         '',
+        'Context: Indian student, rural/low-income; prioritize free resources and low-spec devices.',
         'Constraints:',
         `- Goal: ${goal}`,
         `- Strength: ${strength}`,
@@ -221,6 +222,7 @@ function buildRoadmapPrompt(answers) {
         `- Learning style: ${learningStyle}`,
         `- Weekly time: ${weeklyTime}`,
         `- Domain interest: ${domain}`,
+        'Guidelines:',
         '- Use specific, actionable bullets (Indian/low-cost resources preferred).',
         '- Keep items short; avoid generic advice.'
     ].join('\n');
@@ -379,6 +381,21 @@ async function generateRoadmapFromQuiz() {
     }
 }
 
+// Journal Functions
+function generateJournalPrompt() {
+    const prompts = [
+        'What small win today made you feel proud? Describe it in 3 lines.',
+        'What’s one fear about your career? Write how you’ll handle it this week.',
+        'List 3 free resources you can use this month and why they help you.',
+        'Who can you message today for guidance or feedback? Draft the message.',
+        'Write a thank you note to your future self for staying consistent.',
+        'If you had 30 minutes free daily, how would you use it for your goal?'
+    ];
+    const p = prompts[Math.floor(Math.random() * prompts.length)];
+    const node = document.getElementById('journal-prompt');
+    if (node) node.textContent = p;
+}
+
 // Chat Functions
 function handleChatKeyPress(event) {
     if (event.key === 'Enter') {
@@ -411,26 +428,24 @@ async function sendMessage() {
     document.getElementById('chat-messages').scrollTop = document.getElementById('chat-messages').scrollHeight;
     
     try {
-        // Call the AI API
         const response = await fetch('/api/chat', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-                provider: 'gemini', // Using Gemini API
+                provider: 'gemini',
                 model: 'gemini-1.5-flash',
                 messages: [
                     {
                         role: 'system',
                         content: [
-                            'You are an expert Indian career mentor and curriculum designer.',
-                            'Write crisp, specific, actionable bullets (3–6).',
-                            'Each bullet: action + resource/example + outcome.',
-                            'Prefer Indian/low-cost resources (NPTEL, SWAYAM, NSDC, YouTube channels).',
-                            'Include a mini project idea when relevant.',
-                            'Avoid generic fluff and filler phrases. No long paragraphs.',
-                            'Keep each bullet under 18 words.',
+                            'You are an empathetic Indian career mentor and wellness companion.',
+                            'Always be supportive, culturally aware, and cost-sensitive (rural/low-income context).',
+                            'Write crisp, specific bullets (3–6). Each bullet: action + resource/example + outcome.',
+                            'Prefer Indian/low-cost resources: NPTEL, SWAYAM, NSDC, free YouTube channels.',
+                            'Include a mini project idea when relevant. Avoid generic fluff. No long paragraphs.',
+                            'Keep each bullet under 18 words.'
                         ].join('\n')
                     },
                     {
@@ -452,22 +467,16 @@ async function sendMessage() {
         // Remove typing indicator
         typingDiv.remove();
         
-        // Add AI response (formatted)
         const formatted = formatToBullets(data.response);
         addChatMessage(formatted, 'ai');
         
-        // If server used fallback, show a subtle note
         if (data.fallback) {
             addChatMessage('(Note: Using a temporary response while AI service initializes.)', 'ai');
         }
         
     } catch (error) {
         console.error('Error calling AI API:', error);
-        
-        // Remove typing indicator
         typingDiv.remove();
-        
-        // Fallback response
         addChatMessage('Please try again in a moment. Meanwhile, ask for a roadmap or a 7‑day plan.', 'ai');
     }
 }
