@@ -1,6 +1,5 @@
 import express from 'express';
 import cors from 'cors';
-import { OpenAI } from 'openai';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -62,61 +61,29 @@ app.get('/api/health', (req, res) => {
 app.post('/api/chat', async (req, res) => {
     try {
         let { provider, model, messages, max_tokens, temperature } = req.body;
-
-        // Default to gemini if provider is not specified
         provider = provider || 'gemini';
-        
         if (!messages || !Array.isArray(messages) || messages.length === 0) {
             return res.status(400).json({ error: 'Invalid request parameters: messages array required' });
         }
 
-        let response;
-        
-        if (provider === 'openai') {
-            if (!process.env.OPENAI_API_KEY) {
-                throw new Error('OpenAI API key not configured');
-            }
-            
-            const openai = new OpenAI({
-                apiKey: process.env.OPENAI_API_KEY,
-            });
-            
-            response = await openai.chat.completions.create({
-                model: model || 'gpt-3.5-turbo',
-                messages,
-                max_tokens: max_tokens || 1000,
-                temperature: temperature ?? 0.7,
-            });
-            
-            return res.json({ response: response.choices[0].message.content });
-            
-        } else if (provider === 'gemini') {
+        if (provider === 'gemini') {
             if (!process.env.GEMINI_API_KEY) {
                 throw new Error('Gemini API key not configured');
             }
-            
             const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
             const geminiModel = genAI.getGenerativeModel({ model: model || 'gemini-1.5-flash' });
-            
             const result = await geminiModel.generateContent(messages[messages.length - 1].content);
             const geminiResponse = await result.response;
-            
             return res.json({ response: geminiResponse.text() });
-            
         } else {
-            return res.status(400).json({ error: 'Invalid provider. Use "openai" or "gemini"' });
+            return res.status(400).json({ error: 'Invalid provider. Use "gemini"' });
         }
-        
     } catch (error) {
         console.error('AI API Error:', error);
-
-        // Graceful fallback so the UI still gets a helpful response
         const userMessage = Array.isArray(req.body?.messages) && req.body.messages.length > 0
             ? req.body.messages[req.body.messages.length - 1].content
             : '';
         const fallbackResponse = `I’m here to help with career guidance. Based on your message${userMessage ? ` "${userMessage}"` : ''}, here are quick steps: 1) Clarify your goal, 2) Pick one skill to develop this week, 3) Find one free course to start today (NPTEL/SWAYAM/YouTube), 4) Set a 7‑day plan and track progress. Ask me for a tailored roadmap anytime.`;
-
-        // Return 200 to keep client flow simple
         return res.json({ response: fallbackResponse, fallback: true });
     }
 });
