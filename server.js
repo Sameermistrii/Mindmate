@@ -19,6 +19,10 @@ app.use(cors({
     allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
+// Add body parsers so req.body is available
+app.use(express.json({ limit: '1mb' }));
+app.use(express.urlencoded({ extended: true }));
+
 // Optimize static file serving for Render
 app.use(express.static(__dirname, {
     maxAge: '1h',
@@ -128,7 +132,8 @@ app.use((error, req, res, next) => {
     console.error('Server Error:', error);
     res.status(500).json({ 
         error: 'Internal server error',
-        message: 'Something went wrong. Please try again.'
+        message: 'Something went wrong. Please try again.',
+        details: error && error.message ? error.message : undefined
     });
 });
 
