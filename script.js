@@ -167,6 +167,78 @@ function previousQuestion() {
 function completeQuiz() {
     // Show roadmap
     showSection('roadmap-section');
+
+    // Hide static grid while we generate a personalized roadmap
+    const staticGrid = document.querySelector('#roadmap-section .careers-grid');
+    if (staticGrid) staticGrid.style.display = 'none';
+
+    // Show loading state
+    const roadmapContent = document.getElementById('roadmap-content');
+    if (roadmapContent) {
+        roadmapContent.textContent = 'Generating your personalized roadmap...';
+    }
+
+    // Generate roadmap via AI
+    generateRoadmapFromQuiz();
+}
+
+// Build a concise prompt for roadmap generation
+function buildRoadmapPrompt(answers) {
+    const subjects = answers.subjects || 'Not specified';
+    const activities = answers.activities || 'Not specified';
+    const environment = answers.environment || 'Not specified';
+    const careerTrack = answers.careerTrack || 'Not specified';
+
+    return [
+        'You are an AI career mentor. Create a concise 4–6 step career roadmap.',
+        'Format as short bullet points with clear line breaks. No long paragraphs.',
+        `Student profile:`,
+        `• Interests/subjects: ${subjects}`,
+        `• Enjoys activities: ${activities}`,
+        `• Preferred environment: ${environment}`,
+        `• Target track: ${careerTrack}`,
+        '',
+        'Roadmap should include: skills to learn, 1–2 free resources (NPTEL/SWAYAM/YouTube),',
+        '1 project idea, and a rough timeline (weeks). Keep it simple and actionable.'
+    ].join('\n');
+}
+
+async function generateRoadmapFromQuiz() {
+    try {
+        const prompt = buildRoadmapPrompt(quizAnswers || {});
+        const response = await fetch('/api/chat', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                provider: 'gemini',
+                model: 'gemini-1.5-flash',
+                messages: [
+                    { role: 'system', content: 'Return 4–6 short bullet points with clear line breaks. Avoid paragraphs.' },
+                    { role: 'user', content: prompt }
+                ],
+                max_tokens: 250,
+                temperature: 0.4
+            })
+        });
+
+        const data = await response.json();
+        const roadmapContent = document.getElementById('roadmap-content');
+        if (roadmapContent) {
+            roadmapContent.textContent = data && data.response ? data.response : 'Could not generate roadmap. Please try again.';
+        }
+    } catch (err) {
+        const roadmapContent = document.getElementById('roadmap-content');
+        if (roadmapContent) {
+            roadmapContent.textContent = [
+                '• Clarify one career goal for this month',
+                '• Learn 1 core skill (free course: NPTEL/SWAYAM/YouTube)',
+                '• Build 1 mini project to practice',
+                '• Create a simple portfolio (GitHub/Google Drive)',
+                '• Connect with 2 professionals on LinkedIn',
+                '• Review progress weekly'
+            ].join('\n');
+        }
+    }
 }
 
 // Chat Functions
