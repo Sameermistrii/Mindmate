@@ -3,51 +3,63 @@
 // Quiz Data
 const QUIZ_QUESTIONS = [
     {
-        key: 'subjects',
-        question: 'Which subjects interest you the most?',
+        key: 'goal',
+        question: 'What outcome do you want in the next 6–12 months?',
         options: [
-            'Mathematics and Science',
-            'Languages and Literature',
-            'Arts and Design',
-            'Business and Economics',
-            'Technology and Computers',
-            'Social Sciences and History'
+            'Get my first job/internship',
+            'Switch career/domain',
+            'Strengthen fundamentals',
+            'Prepare for higher studies'
         ]
     },
     {
-        key: 'activities',
-        question: 'What activities do you enjoy doing?',
+        key: 'strength',
+        question: 'Which strength best describes you?',
         options: [
-            'Solving complex problems',
-            'Creating and designing',
-            'Helping and teaching others',
-            'Leading and organizing',
-            'Researching and analyzing',
-            'Building and fixing things'
+            'Logical problem-solving',
+            'Communication and teaching',
+            'Creative design and storytelling',
+            'Hands-on building and tinkering'
         ]
     },
     {
-        key: 'environment',
-        question: 'What work environment do you prefer?',
+        key: 'constraint',
+        question: 'What constraint should we respect?',
         options: [
-            'Office with team collaboration',
-            'Creative studio or workshop',
-            'Remote or flexible work',
-            'Outdoor or field work',
-            'Laboratory or research facility',
-            'Client-facing or customer service'
+            'Low budget—prefer free resources',
+            'Limited laptop/internet',
+            'Only 5–7 hours weekly',
+            'Need quick results (under 8 weeks)'
         ]
     },
     {
-        key: 'careerTrack',
-        question: 'Which career track appeals to you most?',
+        key: 'learningStyle',
+        question: 'How do you prefer to learn?',
         options: [
-            'Engineering and Technology',
-            'Healthcare and Medicine',
-            'Business and Management',
-            'Arts and Creative Industries',
-            'Education and Training',
-            'Research and Development'
+            'Video courses (NPTEL/SWAYAM/YouTube)',
+            'Reading docs/books',
+            'Project-first, learn by doing',
+            'Mentorship/community support'
+        ]
+    },
+    {
+        key: 'weeklyTime',
+        question: 'How much time can you spend weekly?',
+        options: [
+            '3–5 hours',
+            '6–9 hours',
+            '10–14 hours',
+            '15+ hours'
+        ]
+    },
+    {
+        key: 'domain',
+        question: 'Which domain interests you most?',
+        options: [
+            'Software Development / Web',
+            'Data / AI / Analytics',
+            'Design / UX',
+            'Business / Marketing / Ops'
         ]
     }
 ];
@@ -184,10 +196,12 @@ function completeQuiz() {
 
 // Build a concise prompt for roadmap generation
 function buildRoadmapPrompt(answers) {
-    const subjects = answers.subjects || 'Not specified';
-    const activities = answers.activities || 'Not specified';
-    const environment = answers.environment || 'Not specified';
-    const careerTrack = answers.careerTrack || 'Not specified';
+    const goal = answers.goal || 'Not specified';
+    const strength = answers.strength || 'Not specified';
+    const constraint = answers.constraint || 'Not specified';
+    const learningStyle = answers.learningStyle || 'Not specified';
+    const weeklyTime = answers.weeklyTime || 'Not specified';
+    const domain = answers.domain || 'Not specified';
 
     return [
         'Create a JSON-only roadmap (no prose, no markdown) following this schema:',
@@ -201,14 +215,14 @@ function buildRoadmapPrompt(answers) {
         '}',
         '',
         'Constraints:',
+        `- Goal: ${goal}`,
+        `- Strength: ${strength}`,
+        `- Constraint: ${constraint}`,
+        `- Learning style: ${learningStyle}`,
+        `- Weekly time: ${weeklyTime}`,
+        `- Domain interest: ${domain}`,
         '- Use specific, actionable bullets (Indian/low-cost resources preferred).',
-        '- Keep items short; avoid generic advice.',
-        '',
-        'Student profile:',
-        `• Interests/subjects: ${subjects}`,
-        `• Enjoys activities: ${activities}`,
-        `• Preferred environment: ${environment}`,
-        `• Target track: ${careerTrack}`
+        '- Keep items short; avoid generic advice.'
     ].join('\n');
 }
 
