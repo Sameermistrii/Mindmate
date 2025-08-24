@@ -194,6 +194,41 @@ function completeQuiz() {
     generateRoadmapFromQuiz();
 }
 
+// Configurable API base (set window.API_BASE in index.html when splitting hosting)
+const API_BASE = typeof window !== 'undefined' && window.API_BASE ? window.API_BASE.replace(/\/$/, '') : '';
+
+// Show/hide backend warm-up banner
+function setBackendBanner(visible, text) {
+    const banner = document.getElementById('backend-banner');
+    if (!banner) return;
+    if (typeof text === 'string' && text.length > 0) {
+        banner.querySelector('.backend-banner-text').textContent = text;
+    }
+    banner.style.display = visible ? 'block' : 'none';
+}
+
+async function warmUpBackend() {
+    if (!API_BASE) return; // same-origin hosting
+    try {
+        const res = await fetch(`${API_BASE}/api/health`, { method: 'GET' });
+        const data = await res.json();
+        if (data && data.ok) {
+            if (data.status === 'waking_up') {
+                setBackendBanner(true, 'Backend waking up... usually 30–90 seconds on free hosting');
+                setTimeout(warmUpBackend, 3000);
+            } else {
+                setBackendBanner(false);
+            }
+        } else {
+            setBackendBanner(true, 'Connecting to backend...');
+            setTimeout(warmUpBackend, 3000);
+        }
+    } catch (e) {
+        setBackendBanner(true, 'Connecting to backend...');
+        setTimeout(warmUpBackend, 3000);
+    }
+}
+
 // Build a concise prompt for roadmap generation
 function buildRoadmapPrompt(answers) {
     const goal = answers.goal || 'Not specified';
@@ -270,7 +305,7 @@ function renderRoadmap(roadmap) {
   if (!container) return;
 
   // Defensive defaults
-  const targetRole = roadmap?.targetRole || quizAnswers?.careerTrack || 'Your Target Role';
+  const targetRole = roadmap?.targetRole || quizAnswers?.domain || 'Your Target Role';
   const skills = Array.isArray(roadmap?.skills) ? roadmap.skills : [];
   const resources = Array.isArray(roadmap?.resources) ? roadmap.resources : [];
   const projects = Array.isArray(roadmap?.projects) ? roadmap.projects : [];
@@ -338,7 +373,7 @@ function renderRoadmap(roadmap) {
 async function generateRoadmapFromQuiz() {
     try {
         const prompt = buildRoadmapPrompt(quizAnswers || {});
-        const response = await fetch('/api/chat', {
+        const response = await fetch(`${API_BASE}/api/chat`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -428,7 +463,7 @@ async function sendMessage() {
     document.getElementById('chat-messages').scrollTop = document.getElementById('chat-messages').scrollHeight;
     
     try {
-        const response = await fetch('/api/chat', {
+        const response = await fetch(`${API_BASE}/api/chat`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -515,6 +550,9 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Initialize quiz
     document.getElementById('total-questions').textContent = QUIZ_QUESTIONS.length;
+    
+    // Warm up backend if split-hosted
+    warmUpBackend();
     
     console.log('MindMate app initialized successfully!');
 });

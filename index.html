@@ -75,6 +75,10 @@
             </div>
         </header>
 
+        <div id="backend-banner" style="display:none; background:#1f2937; color:#fff; padding:8px 12px; text-align:center;">
+            <span class="backend-banner-text">Connecting to backend...</span>
+        </div>
+
         <!-- Hero Section -->
         <section id="hero" class="hero active">
             <div class="container">
@@ -295,6 +299,11 @@
         </nav>
     </div>
 
-    <script src="script.js?v=4"></script>
+    <script>
+      // If you deploy static files to Vercel/Netlify, set API_BASE to your Render backend URL
+      // Example: window.API_BASE = 'https://testinggggg-nko5.onrender.com';
+      window.API_BASE = 'https://testinggggg-nko5.onrender.com';
+    </script>
+    <script src="script.js?v=5"></script>
 </body>
 </html>
