@@ -6,7 +6,8 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "build": "echo 'Build completed'",
+    "build": "mkdir -p public && cp -f index.html public/index.html && cp -f styles.css styles.css && cp -f script.js script.js && echo 'Build completed'",
+    "vercel-build": "mkdir -p public && cp -f index.html public/index.html && echo 'Vercel build prepared'",
     "dev": "node server.js"
   },
   "keywords": ["career", "ai", "mentor", "assessment"],
